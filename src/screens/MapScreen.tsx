@@ -1,10 +1,12 @@
 import React from 'react';
-import {StyleSheet, View} from 'react-native';
+import {ActivityIndicator, StyleSheet, View} from 'react-native';
 import MapView, {Region} from 'react-native-maps';
 import RNLocation, {Subscription} from 'react-native-location';
 
 import {colors} from '../theme/colors';
 import socket from '../services/socket/socket';
+import storage from '../services/storage/storage';
+import StorageKeys from '../services/storage/StorageKeys';
 
 const MapScreen: React.FC = () => {
   const [initialRegion, setInitialRegion] = React.useState<Region | null>();
@@ -20,7 +22,11 @@ const MapScreen: React.FC = () => {
       });
 
       if (granted) {
+        const userId = storage.getString(StorageKeys.USER_ID);
+        socket.auth = {userId};
+        socket.connect();
         const initialLocation = await RNLocation.getLatestLocation();
+        socket.emit('location', initialLocation);
         if (initialLocation) {
           setInitialRegion({
             latitude: initialLocation?.latitude,
@@ -32,13 +38,11 @@ const MapScreen: React.FC = () => {
         locationSubscription = RNLocation.subscribeToLocationUpdates(
           locations => {
             const location = locations[0];
+            socket.emit('location', location);
           },
         );
       }
     };
-
-    socket.auth = {userId: 'some'};
-    socket.connect();
 
     requestLocationPermission();
 
@@ -48,6 +52,14 @@ const MapScreen: React.FC = () => {
       }
     };
   }, []);
+
+  if (!initialRegion) {
+    return (
+      <View style={[styles.container, styles.loaderContainer]}>
+        <ActivityIndicator size={'large'} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -64,6 +76,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.tints.white[100],
+  },
+
+  loaderContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

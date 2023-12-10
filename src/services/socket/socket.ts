@@ -1,6 +1,6 @@
 import {io} from 'socket.io-client';
 
-const socket = io('ws://localhost:8080');
+const socket = io('ws://localhost:8080/couriers');
 
 socket.on('close', reason => {
   console.log('socketManager closes. Reason:', reason);
