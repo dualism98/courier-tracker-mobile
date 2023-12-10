@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, {useCallback} from 'react';
 import {
   Image,
@@ -11,18 +12,27 @@ import {
   View,
 } from 'react-native';
 import {
+  Asset,
   ImageLibraryOptions,
   launchImageLibrary,
 } from 'react-native-image-picker';
+import {useNavigation} from '@react-navigation/native';
 
 import {colors} from '../theme/colors';
 import indent from '../theme/indent';
 import {borderRadius} from '../theme/constants';
 import {fontSizes} from '../theme/fonts';
+import apiService from '../services/api/Api.service';
+import storage from '../services/storage/storage';
+import StorageKeys from '../services/storage/StorageKeys';
+import {SignUpNavigationProp} from '../navigation/types';
+import NavigationKeys from '../navigation/NavigationKeys';
 
 const SignUpScreen: React.FC = () => {
-  const [image, setImage] = React.useState('');
+  const [image, setImage] = React.useState<Asset | null>();
   const [name, setName] = React.useState('');
+
+  const navigation = useNavigation<SignUpNavigationProp>();
 
   const handleImagePress = async () => {
     const options: ImageLibraryOptions = {
@@ -33,13 +43,15 @@ const SignUpScreen: React.FC = () => {
     const response = await launchImageLibrary(options);
     if (response.assets && response.assets[0].fileSize) {
       const asset = response.assets[0];
-      setImage(asset.uri!);
+      setImage(asset);
     }
   };
 
-  const handleCreatePress = useCallback(() => {
-    // TODO
-  }, []);
+  const handleCreatePress = useCallback(async () => {
+    const userId = await apiService.createProfile(image!, name);
+    storage.set(StorageKeys.USER_ID, userId);
+    navigation.replace(NavigationKeys.MapScreen);
+  }, [image, name]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -51,7 +63,7 @@ const SignUpScreen: React.FC = () => {
               source={require('../assets/img/profileImage.png')}
               style={styles.imagePlaceholder}
             />
-            <Image source={{uri: image}} style={styles.image} />
+            <Image source={{uri: image?.uri}} style={styles.image} />
           </Pressable>
           <TextInput
             value={name}
@@ -60,7 +72,10 @@ const SignUpScreen: React.FC = () => {
             placeholder={'Enter your name...'}
           />
         </View>
-        <TouchableOpacity onPress={handleCreatePress} style={styles.button}>
+        <TouchableOpacity
+          disabled={!image || !name}
+          onPress={handleCreatePress}
+          style={styles.button}>
           <Text style={styles.buttonText}>Create profile</Text>
         </TouchableOpacity>
       </KeyboardAvoidingView>

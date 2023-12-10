@@ -9,7 +9,7 @@ import StorageKeys from '../services/storage/StorageKeys';
 const Stack = createNativeStackNavigator();
 
 const Navigation: React.FC = () => {
-  const profileIsCreated = storage.getBoolean(StorageKeys.PROFILE_CREATED);
+  const profileIsCreated = storage.getString(StorageKeys.USER_ID);
 
   return (
     <Stack.Navigator
